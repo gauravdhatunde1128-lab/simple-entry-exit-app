@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Attendance Tracker</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    function AttendanceTracker() {
+      const [name, setName] = useState('');
+      
+      // 1. Load data from Local Storage when the app starts
+      const [entries, setEntries] = useState(() => {
+        const savedData = localStorage.getItem('attendanceData');
+        return savedData ? JSON.parse(savedData) : [];
+      });
+
+      // 2. Save data to Local Storage every time a new entry or exit is added
+      useEffect(() => {
+        localStorage.setItem('attendanceData', JSON.stringify(entries));
+      }, [entries]);
+
+      const handleEntry = () => {
+        if (!name.trim()) return;
+        const now = new Date();
+        setEntries([
+          ...entries,
+          {
+            id: Date.now(), // Unique ID for each entry
+            name: name,
+            entryTime: now.toLocaleTimeString(),
+            exitTime: null
+          }
+        ]);
+        setName('');
+      };
+
+      const handleExit = (id) => {
+        const updatedEntries = entries.map(entry => {
+          if (entry.id === id && !entry.exitTime) {
+            return { ...entry, exitTime: new Date().toLocaleTimeString() };
+          }
+          return entry;
+        });
+        setEntries(updatedEntries);
+      };
+
+      const clearAllData = () => {
+        if (window.confirm("Are you sure you want to delete all records?")) {
+          setEntries([]);
+          localStorage.removeItem('attendanceData');
+        }
+      };
+
+      return (
+        <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+          <h2>Attendance Tracker (Auto-Saves to Browser)</h2>
+          
+          <div style={{ marginBottom: '20px' }}>
+            <input
+              type="text"
+              placeholder="Enter Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              style={{ padding: '10px', marginRight: '10px', width: '200px' }}
+            />
+            <button onClick={handleEntry} style={{ padding: '10px', cursor: 'pointer', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px' }}>
+              Add Entry
+            </button>
+            <button onClick={clearAllData} style={{ padding: '10px', cursor: 'pointer', backgroundColor: '#f44336', color: 'white', border: 'none', borderRadius: '4px', marginLeft: '10px' }}>
+              Clear All Data
+            </button>
+          </div>
+
+          <table border="1" cellPadding="10" cellSpacing="0" style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
+            <thead style={{ backgroundColor: '#f2f2f2' }}>
+              <tr>
+                <th>Name</th>
+                <th>Entry Time</th>
+                <th>Exit Time</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {entries.map((entry) => (
+                <tr key={entry.id}>
+                  <td>{entry.name}</td>
+                  <td>{entry.entryTime}</td>
+                  <td>{entry.exitTime ? entry.exitTime : 'Not Exited Yet'}</td>
+                  <td>
+                    {!entry.exitTime && (
+                      <button onClick={() => handleExit(entry.id)} style={{ padding: '5px 10px', cursor: 'pointer', backgroundColor: '#008CBA', color: 'white', border: 'none', borderRadius: '4px' }}>
+                        Mark Exit
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {entries.length === 0 && (
+                <tr>
+                  <td colSpan="4" style={{ textAlign: 'center' }}>No records found.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<AttendanceTracker />);
+  </script>
+
+</body>
+</html>
